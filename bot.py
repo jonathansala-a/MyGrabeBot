@@ -1,59 +1,61 @@
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
-from flask import Flask, request
-import requests
 import os
+import requests
+from flask import Flask, request
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 TOKEN = os.getenv("BOT_TOKEN")
-APP_URL = os.getenv("APP_URL")  # Example: https://your-service.onrender.com
+APP_URL = os.getenv("APP_URL")  # Example: https://your-render-url.onrender.com
 
 app = Flask(__name__)
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Send me any media file and I’ll give you a download link.")
+# ---------------- TELEGRAM BOT HANDLERS ----------------
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Send me any media file and I’ll give you a download link.")
 
-def handle_file(update: Update, context: CallbackContext):
+async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = None
 
     if update.message.photo:
-        file = update.message.photo[-1].get_file()
+        file = await update.message.photo[-1].get_file()
     elif update.message.video:
-        file = update.message.video.get_file()
+        file = await update.message.video.get_file()
     elif update.message.document:
-        file = update.message.document.get_file()
+        file = await update.message.document.get_file()
     elif update.message.audio:
-        file = update.message.audio.get_file()
+        file = await update.message.audio.get_file()
     elif update.message.voice:
-        file = update.message.voice.get_file()
+        file = await update.message.voice.get_file()
 
     if not file:
-        update.message.reply_text("Please send a valid media file.")
+        await update.message.reply_text("Please send a valid media file.")
         return
 
     download_url = file.file_path
-    update.message.reply_text(f"Your download link:\n{download_url}")
+    await update.message.reply_text(f"Your download link:\n{download_url}")
 
-@app.route('/' + TOKEN, methods=['POST'])
+# ---------------- FLASK WEBHOOK ----------------
+@app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    updater.dispatcher.process_update(
-        Update.de_json(request.get_json(force=True), updater.bot)
-    )
+    """Receive updates from Telegram."""
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    application.create_task(application.update_queue.put(update))
     return "OK", 200
 
-@app.route('/')
+@app.route("/")
 def home():
-    return "Bot is running!", 200
+    return "Telegram Bot is Running!", 200
+
+# ---------------- RUN BOT ----------------
+application = ApplicationBuilder().token(TOKEN).build()
+
+application.add_handler(CommandHandler("start", start))
+application.add_handler(MessageHandler(filters.ALL, handle_file))
 
 def set_webhook():
     url = f"{APP_URL}/{TOKEN}"
     webhook_url = f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={url}"
     requests.get(webhook_url)
-
-updater = Updater(TOKEN, use_context=True)
-dp = updater.dispatcher
-
-dp.add_handler(CommandHandler("start", start))
-dp.add_handler(MessageHandler(Filters.all, handle_file))
 
 if __name__ == "__main__":
     set_webhook()
