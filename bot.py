@@ -9,7 +9,7 @@ APP_URL = os.getenv("APP_URL")  # Example: https://your-render-url.onrender.com
 
 app = Flask(__name__)
 
-# ---------------- TELEGRAM BOT HANDLERS ----------------
+# ---------------- TELEGRAM HANDLERS ----------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Send me any media file and I’ll give you a download link.")
 
@@ -37,7 +37,6 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ---------------- FLASK WEBHOOK ----------------
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    """Receive updates from Telegram."""
     update = Update.de_json(request.get_json(force=True), application.bot)
     application.create_task(application.update_queue.put(update))
     return "OK", 200
@@ -48,15 +47,15 @@ def home():
 
 # ---------------- RUN BOT ----------------
 application = ApplicationBuilder().token(TOKEN).build()
-
 application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.ALL, handle_file))
 
+# ---------------- SET WEBHOOK ----------------
 def set_webhook():
     url = f"{APP_URL}/{TOKEN}"
-    webhook_url = f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={url}"
-    requests.get(webhook_url)
+    requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={url}")
 
 if __name__ == "__main__":
     set_webhook()
+    # Flask runs separately; Telegram async bot runs inside update_queue
     app.run(host="0.0.0.0", port=10000)
