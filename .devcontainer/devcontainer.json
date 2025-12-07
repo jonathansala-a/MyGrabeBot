@@ -1,0 +1,9 @@
+{
+  "name": "Telegram Bot Codespace",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "postCreateCommand": "pip install -r requirements.txt",
+  "containerEnv": {
+    "BOT_TOKEN": "8516574211:AAFdIKBJu22gjCZ2M0GEp3LpkfwiP6fx3Hk",
+    "APP_URL": "https://bug-free-waddle-r4q7pqw475v93wjv.github.dev/?editor=web"
+  }
+}
