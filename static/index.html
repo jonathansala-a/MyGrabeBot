@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Downloader</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<h2>Enter media URL</h2>
+
+<input id="media" placeholder="Paste URL here">
+<button onclick="send()">Download</button>
+
+<script>
+function send() {
+    const url = document.getElementById("media").value;
+
+    fetch("/download", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            chat_id: Telegram.WebApp.initDataUnsafe.user.id,
+            url: url
+        })
+    });
+
+    Telegram.WebApp.close();
+}
+</script>
+
+</body>
+</html>
